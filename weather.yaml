@@ -3,7 +3,7 @@ esphome:
   friendly_name: m5papers3
   build_path: config/esphome/m5papers3
   libraries:
-    - EPDIY=https://github.com/patrick3399/epdiy
+    - EPDIY=https://github.com/bjoernglawe/epdiy
   on_boot:
     then:
 #      - rtttl.play: 'siren:d=8,o=5,b=100:d,e,d'
@@ -41,7 +41,7 @@ interval:
           
 
 logger:
-  level: WARN
+  level: INFO
   baud_rate: 1920
   logs:
     api.service: WARN
@@ -70,12 +70,12 @@ wifi:
 external_components:
   - source: github://patrick3399/esphome_components    
   # - source: github://n-serrette/esphome_sd_card   #If need SD Card Support
-#i2c:
-#  sda: GPIO41
-#  scl: GPIO42
-#  scan: true
-#  id: bus_internal
-#  frequency: 200kHz
+i2c:
+  sda: GPIO41
+  scl: GPIO42
+  scan: true
+  id: bus_internal
+  frequency: 200kHz
 
 # sd_mmc_card:  #If need SD Card Support
 #   id: micro_sd
@@ -93,22 +93,22 @@ external_components:
 #   enable_download: true
 #   enable_upload: true
 
-#touchscreen:
-#  platform: gt911
-#  id: my_touchscreen
-#  interrupt_pin: GPIO48
-#  transform:
-#    mirror_x: true
-#    mirror_y: true
-#    swap_xy: false
-#  on_touch:
-#    - lambda: |-
-#          ESP_LOGI("cal", "x=%d, y=%d, x_raw=%d, y_raw=%0d",
-#              touch.x,
-#              touch.y,
-#              touch.x_raw,
-#              touch.y_raw
-#              );
+touchscreen:
+  platform: gt911
+  id: my_touchscreen
+  interrupt_pin: GPIO48
+  transform:
+    mirror_x: true
+    mirror_y: true
+    swap_xy: false
+  on_touch:
+    - lambda: |-
+          ESP_LOGI("cal", "x=%d, y=%d, x_raw=%d, y_raw=%0d",
+              touch.x,
+              touch.y,
+              touch.x_raw,
+              touch.y_raw
+              );
 light:
   - platform: monochromatic
     id: statled
@@ -286,14 +286,12 @@ binary_sensor:
 #   then:
 #     - script.execute: power_off
 
-#time:
-#  - platform: pcf8563  #BM8563
-#    id: pcf8563_time
-#    address: 0x51
-#    timezone: Europe/London
-#    update_interval: never
-
-time:    
+time:
+  - platform: pcf8563  #BM8563
+    id: pcf8563_time
+    address: 0x51
+    timezone: Europe/London
+    update_interval: never
   - platform: homeassistant
     id: homeassistant_time
     timezone: Europe/London
