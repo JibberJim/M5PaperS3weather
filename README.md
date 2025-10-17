@@ -16,6 +16,3 @@ sudo  esphome run ./weather.yaml --device /dev/cu.usbmodem2101
 
 See the same as mine.
 
-Problems:
-
-Unfortunately the touch screen and the real time column are erroring now because of i2c changes in [Expressif](https://forum.arduino.cc/t/conflict-driver-ng-i2c-driver/1399382) so they're commented out to be solved later.
