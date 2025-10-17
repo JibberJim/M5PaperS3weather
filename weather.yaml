@@ -1,0 +1,652 @@
+esphome:
+  name: m5papers3
+  friendly_name: m5papers3
+  build_path: config/esphome/m5papers3
+  libraries:
+    - EPDIY=https://github.com/patrick3399/epdiy
+  on_boot:
+    then:
+#      - rtttl.play: 'siren:d=8,o=5,b=100:d,e,d'
+#      - delay: 4s
+      - component.update: ed047tc1_display
+      - lambda: |-
+          id(system_initialized) = true;
+
+esp32:
+  variant: ESP32S3
+  flash_size: 16MB  
+  framework:
+    type: esp-idf
+    sdkconfig_options:
+      CONFIG_EPD_OUTPUT_LUT_ASSEMBLY: "y"
+      CONFIG_ESP32S3_INSTRUCTION_SET_AI_DSP: "y"
+      CONFIG_ESP32S3_VECTOR_INSTRUCTIONS_SUPPORT: "y"
+
+globals:
+  - id: system_initialized
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+
+psram:
+  mode: octal
+  speed: 80MHz
+
+interval:
+  - interval: 8s
+    then:
+      - light.turn_on: statled
+      - delay: 1s
+      - light.turn_off: statled
+          
+
+logger:
+  level: WARN
+  baud_rate: 1920
+  logs:
+    api.service: WARN
+    wifi: NONE
+    esp-idf: NONE
+    light: NONE
+debug:
+  update_interval: 10s
+
+api:
+  # encryption:
+  #   key: !secret api_key
+  reboot_timeout: 6h
+  homeassistant_services: true
+
+ota:
+  - platform: esphome
+    #password: !secret ota_password
+
+wifi:
+  ssid: !secret wifi_ssd
+  password: !secret wifi_pw
+  reboot_timeout: 6h
+  #power_save_mode: LIGHT
+
+external_components:
+  - source: github://patrick3399/esphome_components    
+  # - source: github://n-serrette/esphome_sd_card   #If need SD Card Support
+#i2c:
+#  sda: GPIO41
+#  scl: GPIO42
+#  scan: true
+#  id: bus_internal
+#  frequency: 200kHz
+
+# sd_mmc_card:  #If need SD Card Support
+#   id: micro_sd
+#   mode_1bit: true
+#   clk_pin: GPIO7
+#   cmd_pin: GPIO8
+#   data0_pin: GPIO9
+#   data3_pin: GPIO10
+
+# sd_file_server:  #If need SD Card Support
+#   id: file_server
+#   url_prefix: file
+#   root_path: "/"
+#   enable_deletion: true
+#   enable_download: true
+#   enable_upload: true
+
+#touchscreen:
+#  platform: gt911
+#  id: my_touchscreen
+#  interrupt_pin: GPIO48
+#  transform:
+#    mirror_x: true
+#    mirror_y: true
+#    swap_xy: false
+#  on_touch:
+#    - lambda: |-
+#          ESP_LOGI("cal", "x=%d, y=%d, x_raw=%d, y_raw=%0d",
+#              touch.x,
+#              touch.y,
+#              touch.x_raw,
+#              touch.y_raw
+#              );
+light:
+  - platform: monochromatic
+    id: statled
+    name: "Status LED"
+    output: gpio_0
+    restore_mode: ALWAYS_OFF
+    internal: True
+    disabled_by_default: True
+
+output:
+  - platform: ledc
+    id: rtttl_pin
+    pin: 21
+  - platform: ledc
+    id: gpio_0
+    pin: 0
+    inverted: True
+rtttl:
+  output: rtttl_pin
+  id: rtttl_buzz
+  gain: 60%
+
+text_sensor:
+  - platform: debug
+    device:
+      name: "Device Info"
+    reset_reason:
+      name: "Reset Reason"
+  - platform: homeassistant
+    id: forecast_temperature_unit
+    entity_id: weather.forecast_home
+    attribute: temperature_unit
+    internal: true
+  - platform: homeassistant
+    id: moon
+    entity_id: sensor.moon_phase
+    internal: true
+  - platform: homeassistant
+    id: forecast_wind_speed_unit
+    entity_id: weather.forecast_home
+    attribute: wind_speed_unit
+    internal: true
+  - platform: homeassistant
+    id: weather_state
+    entity_id: weather.forecast_home
+    internal: true
+    on_value:
+      then:
+        - component.update: ed047tc1_display
+  - platform: homeassistant
+    id: sunset
+    entity_id: sensor.sun_next_setting
+    internal: true
+    on_value:
+      then:
+        - component.update: ed047tc1_display
+  - platform: homeassistant
+    id: sunrise
+    entity_id: sensor.sun_next_rising
+    internal: true
+    on_value:
+      then:
+        - component.update: ed047tc1_display
+
+sensor:
+  - platform: internal_temperature
+    name: "Chip Temp"
+
+  - platform: homeassistant
+    id: outdoors_temp
+    entity_id: sensor.0xa4c138554da7a279_temperature
+    internal: true
+    on_value:
+      then:
+        - component.update: ed047tc1_display
+  - platform: homeassistant
+    id: outdoors_humidity
+    entity_id: sensor.0xa4c138554da7a279_humidity
+    internal: true
+    on_value:
+      then:
+        - component.update: ed047tc1_display
+  - platform: homeassistant
+    id: frontdoors_temp
+    entity_id: sensor.0xa4c1386798ada941_temperature
+    internal: true
+    on_value:
+      then:
+        - component.update: ed047tc1_display
+  - platform: homeassistant
+    id: frontdoors_humidity
+    entity_id: sensor.0xa4c1386798ada941_humidity
+    internal: true
+    on_value:
+      then:
+        - component.update: ed047tc1_display
+  - platform: homeassistant
+    id: indoors_temp
+    entity_id: sensor.indoors_temperature
+    internal: true
+    on_value:
+      then:
+        - component.update: ed047tc1_display
+  - platform: homeassistant
+    id: indoors_humidity
+    entity_id: sensor.indoors_humidity
+    internal: true
+    on_value:
+      then:
+        - component.update: ed047tc1_display
+  - platform: homeassistant
+    id: conservatory_temp
+    entity_id: sensor.conservatory_temperature
+    internal: true
+    on_value:
+      then:
+        - component.update: ed047tc1_display
+  - platform: homeassistant
+    id: conservatory_humidity
+    entity_id: sensor.conservatory_humidity
+    internal: true
+    on_value:
+      then:
+        - component.update: ed047tc1_display
+  - platform: homeassistant
+    id: forecast_temperature
+    entity_id: weather.forecast_home
+    attribute: temperature
+    internal: true
+    on_value:
+      then:
+        - component.update: ed047tc1_display
+  - platform: homeassistant
+    id: forecast_wind_speed
+    entity_id: weather.forecast_home
+    attribute: wind_speed
+    internal: true
+    on_value:
+      then:
+        - component.update: ed047tc1_display
+  - platform: homeassistant
+    id: forecast_wind_bearing
+    entity_id: weather.forecast_home
+    attribute: wind_bearing
+    internal: true
+    on_value:
+      then:
+        - component.update: ed047tc1_display
+
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: 4
+      inverted: True
+    name: "Charge Status"
+    device_class: battery_charging
+
+# switch:
+#   - platform: gpio
+#     pin: GPIO44
+#     id: gpio_power
+#
+# script:
+#   - id: power_off
+#     then:
+#       - repeat: 
+#           count: 10 # M5 docs execute 5 full on/off cycles for the M5PaperS3, hence 10 toggles of the pin.
+#           then: 
+#             - switch.toggle: gpio_power
+#             - delay: 50ms
+#
+# Usage: Execute the script in an action where appropriate (eg on_idle)
+#
+# on_...:
+#   then:
+#     - script.execute: power_off
+
+#time:
+#  - platform: pcf8563  #BM8563
+#    id: pcf8563_time
+#    address: 0x51
+#    timezone: Europe/London
+#    update_interval: never
+
+time:    
+  - platform: homeassistant
+    id: homeassistant_time
+    timezone: Europe/London
+    update_interval: 1h
+
+
+image:
+  - file: mdi:weather-sunset-up
+    id: img_sunrise
+    type: grayscale
+    transparency: alpha_channel
+    resize: 55x55
+  - file: mdi:weather-sunset-down
+    id: img_sunset
+    type: grayscale
+    transparency: alpha_channel
+    resize: 55x55
+  - file: mdi:weather-cloudy
+    id: img_cloudy
+    type: grayscale
+    transparency: alpha_channel
+    resize: 200x200
+  - file: mdi:weather-night
+    id: img_clear_night
+    type: grayscale
+    transparency: alpha_channel
+    resize: 200x200
+  - file: mdi:weather-fog
+    id: img_fog
+    type: grayscale
+    transparency: alpha_channel
+    resize: 200x200
+  - file: mdi:weather-hail
+    id: img_hail
+    type: grayscale
+    transparency: alpha_channel
+    resize: 200x200
+  - file: mdi:weather-lightning
+    id: img_lightning
+    type: grayscale
+    transparency: alpha_channel
+    resize: 200x200
+  - file: mdi:weather-lightning-rainy
+    id: img_lightning_rainy
+    type: grayscale
+    transparency: alpha_channel
+    resize: 200x200
+  - file: mdi:weather-partly-cloudy
+    id: img_partlycloudy
+    type: grayscale
+    transparency: alpha_channel
+    resize: 200x200
+  - file: mdi:weather-pouring
+    id: img_pouring
+    type: grayscale
+    transparency: alpha_channel
+    resize: 200x200
+  - file: mdi:weather-rainy
+    id: img_rainy
+    type: grayscale
+    transparency: alpha_channel
+    resize: 200x200
+  - file: mdi:weather-snowy
+    id: img_snowy
+    type: grayscale
+    transparency: alpha_channel
+    resize: 200x200
+  - file: mdi:weather-snowy-rainy
+    id: img_snowy_rainy
+    type: grayscale
+    transparency: alpha_channel
+    resize: 200x200
+  - file: mdi:weather-sunny
+    id: img_sunny
+    type: grayscale
+    transparency: alpha_channel
+    resize: 200x200
+  - file: mdi:weather-windy
+    id: img_windy
+    type: grayscale
+    transparency: alpha_channel
+    resize: 200x200
+  - file: mdi:weather-windy-variant
+    id: img_windy_variant
+    type: grayscale
+    transparency: alpha_channel
+    resize: 200x200
+  - file: mdi:cloud-alert-outline
+    id: img_exceptional
+    type: grayscale
+    transparency: alpha_channel
+    resize: 200x200
+  - file: mdi:moon-first-quarter
+    id: img_moon_first_quarter
+    type: grayscale
+    transparency: alpha_channel
+    resize: 150x150
+  - file: mdi:moon-last-quarter
+    id: img_moon_last_quarter
+    type: grayscale
+    transparency: alpha_channel
+    resize: 150x150
+  - file: mdi:moon-full
+    id: img_moon_full
+    type: grayscale
+    transparency: alpha_channel
+    resize: 150x150
+  - file: mdi:moon-new
+    id: img_moon_new
+    type: grayscale
+    transparency: alpha_channel
+    resize: 150x150
+  - file: mdi:moon-waning-crescent
+    id: img_moon_waning_crescent
+    type: grayscale
+    transparency: alpha_channel
+    resize: 150x150
+  - file: mdi:moon-waning-gibbous
+    id: img_moon_waning_gibbous
+    type: grayscale
+    transparency: alpha_channel
+    resize: 150x150
+  - file: mdi:moon-waxing-crescent
+    id: img_moon_waxing_crescent
+    type: grayscale
+    transparency: alpha_channel
+    resize: 150x150
+  - file: mdi:moon-waxing-gibbous
+    id: img_moon_waxing_gibbous
+    type: grayscale
+    transparency: alpha_channel
+    resize: 150x150
+
+display:
+  - platform: ed047tc1
+    id: ed047tc1_display
+    pwr_pin: GPIO45
+    bst_en_pin: GPIO46
+    xstl_pin: GPIO13
+    xle_pin: GPIO15
+    spv_pin: GPIO17
+    ckv_pin: GPIO18
+    pclk_pin: GPIO16
+    d0_pin: GPIO6
+    d1_pin: GPIO14
+    d2_pin: GPIO7
+    d3_pin: GPIO12
+    d4_pin: GPIO9
+    d5_pin: GPIO11
+    d6_pin: GPIO8
+    d7_pin: GPIO10
+    update_interval: never
+    rotation: 0
+    lambda: |-
+       ESPTime sunsetESP{};
+       ESPTime sunriseESP{};
+       std::string rise_str = id(sunrise).state.c_str();
+       std::string set_str = id(sunset).state.c_str();
+
+       if (rise_str.size() >= 19) { rise_str = rise_str.substr(0, 19); rise_str[10] = ' '; }
+       if (set_str.size() >= 19) { set_str = set_str.substr(0, 19); set_str[10] = ' '; }
+       if (ESPTime::strptime(rise_str, sunriseESP) && ESPTime::strptime(set_str, sunsetESP)) {
+           // timezone_offset is weird, where is it got from? this is ludicrous.
+           if (id(homeassistant_time).now().is_dst) {
+             for (int i = 0; i < 3600; i++) {
+               sunriseESP.increment_second();
+               sunsetESP.increment_second();
+             }
+           }
+           int sun_x=it.get_width()-252;
+           int sun_y=42;
+           it.image(sun_x,sun_y+6,id(img_sunrise));
+           std::string risetime = sunriseESP.strftime("%H:%M").c_str();
+
+           if (risetime[0]=='0') {
+             risetime=risetime.substr(1,5);
+           }
+           it.printf(sun_x+205, sun_y, id(RobotoMono50), TextAlign::TOP_RIGHT, "%s",risetime.c_str());
+           it.image(sun_x,sun_y+76,id(img_sunset));
+           it.printf(sun_x+205, sun_y+70, id(RobotoMono50), TextAlign::TOP_RIGHT, "%s",sunsetESP.strftime("%H:%M").c_str() );
+       }
+
+       ESP_LOGW("Jibber", "Weather %s",id(weather_state).state.c_str());
+
+       int forecast_x=20;
+       int forecast_y=10;
+       if (strcmp(id(weather_state).state.c_str(),"cloudy")==0) {
+           it.image(forecast_x,forecast_y,id(img_cloudy));
+       }
+       if (strcmp(id(weather_state).state.c_str(),"clear-night")==0) {
+           it.image(forecast_x,forecast_y,id(img_clear_night));
+       }
+       if (strcmp(id(weather_state).state.c_str(),"fog")==0) {
+           it.image(forecast_x,forecast_y,id(img_fog));
+       }
+       if (strcmp(id(weather_state).state.c_str(),"hail")==0) {
+           it.image(forecast_x,forecast_y,id(img_hail));
+       }
+       if (strcmp(id(weather_state).state.c_str(),"lightning")==0) {
+           it.image(forecast_x,forecast_y,id(img_lightning));
+       }
+       if (strcmp(id(weather_state).state.c_str(),"lightning-rainy")==0) {
+           it.image(forecast_x,forecast_y,id(img_lightning_rainy));
+       }
+       if (strcmp(id(weather_state).state.c_str(),"partlycloudy")==0) {
+           it.image(forecast_x,forecast_y,id(img_partlycloudy));
+       }
+       if (strcmp(id(weather_state).state.c_str(),"pouring")==0) {
+           it.image(forecast_x,forecast_y,id(img_pouring));
+       }
+       if (strcmp(id(weather_state).state.c_str(),"rainy")==0) {
+           it.image(forecast_x,forecast_y,id(img_rainy));
+       }
+       if (strcmp(id(weather_state).state.c_str(),"snowy")==0) {
+           it.image(forecast_x,forecast_y,id(img_snowy));
+       }
+       if (strcmp(id(weather_state).state.c_str(),"snowy-rainy")==0) {
+           it.image(forecast_x,forecast_y,id(img_snowy_rainy));
+       }
+       if (strcmp(id(weather_state).state.c_str(),"sunny")==0) {
+           it.image(forecast_x,forecast_y,id(img_sunny));
+       }
+       if (strcmp(id(weather_state).state.c_str(),"windy")==0) {
+           it.image(forecast_x,forecast_y,id(img_windy));
+       }
+       if (strcmp(id(weather_state).state.c_str(),"windy-variant")==0) {
+           it.image(forecast_x,forecast_y,id(img_windy_variant));
+       }
+       if (strcmp(id(weather_state).state.c_str(),"exceptional")==0) {
+           it.image(forecast_x,forecast_y,id(img_exceptional));
+       }
+
+       auto grey = Color(180,180,180);
+       int wind_y =  105;
+       int wind_r =  70;
+       int wind_x = 280+wind_r;
+
+       it.filled_ring(wind_x,wind_y,wind_r-1,wind_r+1, grey);
+
+       if (id(forecast_wind_speed).has_state() && id(forecast_wind_speed_unit).has_state()) {
+         it.printf(wind_x, wind_y-8, id(Roboto40), TextAlign::CENTER, "%.1f",id(forecast_wind_speed).state);
+         it.print(wind_x, wind_y+23, id(Roboto30), grey, TextAlign::CENTER, id(forecast_wind_speed_unit).state.c_str());
+       }
+
+       if (id(forecast_wind_bearing).has_state()) {
+           float bearing = id(forecast_wind_bearing).state;
+           float bearingRadians = bearing * 3.14159 / 180 - 3.14159/2;
+           int wind_dot_x= wind_x+wind_r * cos(bearingRadians);
+           int wind_dot_y= wind_y+wind_r * sin(bearingRadians);
+           it.filled_circle(wind_dot_x,wind_dot_y,9);
+       }
+    
+       ESP_LOGW("Jibber", "Weather %s",id(moon).state.c_str());
+
+       int moon_x=it.get_width()-224-225;
+       int moon_y=30;
+       if (strcmp(id(moon).state.c_str(),"full_moon")==0) {
+           it.image(moon_x,moon_y,id(img_moon_full));
+       }
+       if (strcmp(id(moon).state.c_str(),"waning_crescent")==0) {
+           it.image(moon_x,moon_y,id(img_moon_waning_crescent));
+       }
+       if (strcmp(id(moon).state.c_str(),"waxing_crescent")==0) {
+           it.image(moon_x,moon_y,id(img_moon_waxing_crescent));
+       }
+       if (strcmp(id(moon).state.c_str(),"waning_gibbous")==0) {
+           it.image(moon_x,moon_y,id(img_moon_waning_gibbous));
+       }
+       if (strcmp(id(moon).state.c_str(),"waxing_gibbous")==0) {
+           it.image(moon_x,moon_y,id(img_moon_waxing_gibbous));
+       }
+       if (strcmp(id(moon).state.c_str(),"last_quarter")==0) {
+           it.image(moon_x,moon_y,id(img_moon_last_quarter));
+       }
+       if (strcmp(id(moon).state.c_str(),"first_quarter")==0) {
+           it.image(moon_x,moon_y,id(img_moon_first_quarter));
+       }
+
+
+       int outdoor_x = 16;
+       int outdoor_y = 230;
+       it.rectangle(outdoor_x-5,outdoor_y-3,221,187,grey);
+       it.print(outdoor_x, outdoor_y, id(Roboto30), grey, TextAlign::TOP_LEFT, "Outdoors");  
+       if (id(outdoors_temp).has_state() && id(outdoors_humidity).has_state() && id(forecast_temperature_unit).has_state()) {
+         it.printf(outdoor_x+210, outdoor_y+27, id(Roboto70), TextAlign::TOP_RIGHT, "%.1f%s",id(outdoors_temp).state,id(forecast_temperature_unit).state.c_str());
+         it.printf(outdoor_x+210, outdoor_y+107, id(Roboto50), TextAlign::TOP_RIGHT, "%.1f%% ",id(outdoors_humidity).state);
+       }
+
+       int indoor_x = 250;
+       int indoor_y = 230;
+       it.rectangle(indoor_x-5,indoor_y-3,221,187,grey);
+       it.print(indoor_x, indoor_y, id(Roboto30), grey, TextAlign::TOP_LEFT, "Indoors");  
+       if (id(indoors_temp).has_state() && id(indoors_humidity).has_state() && id(forecast_temperature_unit).has_state()) {
+         it.printf(indoor_x+207, indoor_y+27, id(Roboto70), TextAlign::TOP_RIGHT, "%.1f%s",id(indoors_temp).state,id(forecast_temperature_unit).state.c_str());
+         it.printf(indoor_x+207, indoor_y+107, id(Roboto50), TextAlign::TOP_RIGHT, "%.1f%% ",id(indoors_humidity).state);
+       }
+
+       int frontdoor_x = 484;
+       int frontdoor_y = 230;
+       it.rectangle(frontdoor_x-5,frontdoor_y-3,221,187,grey);
+       it.print(frontdoor_x, frontdoor_y, id(Roboto30), grey, TextAlign::TOP_LEFT, "Outdoors Front");  
+       if (id(frontdoors_temp).has_state() && id(frontdoors_humidity).has_state() && id(forecast_temperature_unit).has_state()) {
+         it.printf(frontdoor_x+207, frontdoor_y+27, id(Roboto70), TextAlign::TOP_RIGHT, "%.1f%s",id(frontdoors_temp).state,id(forecast_temperature_unit).state.c_str());
+         it.printf(frontdoor_x+207, frontdoor_y+107, id(Roboto50), TextAlign::TOP_RIGHT, "%.1f%% ",id(frontdoors_humidity).state);
+       }
+
+       int conservatory_x = 714;
+       int conservatory_y = 230;
+       it.rectangle(conservatory_x-5,conservatory_y-3,221,187,grey);
+       it.print(conservatory_x, conservatory_y, id(Roboto30), grey, TextAlign::TOP_LEFT, "Conservatory");  
+       if (id(conservatory_temp).has_state() && id(conservatory_humidity).has_state() && id(forecast_temperature_unit).has_state()) {
+         it.printf(conservatory_x+207, conservatory_y+27, id(Roboto70), TextAlign::TOP_RIGHT, "%.1f%s",id(conservatory_temp).state,id(forecast_temperature_unit).state.c_str());
+         it.printf(conservatory_x+207, conservatory_y+107, id(Roboto50), TextAlign::TOP_RIGHT, "%.1f%% ",id(conservatory_humidity).state);
+       }
+
+
+
+
+       it.print(it.get_width() / 2, it.get_height() , id(Roboto70), TextAlign::BOTTOM_CENTER, id(message).state.c_str());
+
+font:
+  - file: "gfonts://Roboto"
+    id: Roboto70
+    size: 70
+  - file: "gfonts://Roboto"
+    id: Roboto40
+    size: 40
+  - file: "gfonts://Roboto"
+    id: Roboto30
+    size: 30
+  - file: "gfonts://Roboto"
+    id: Roboto50
+    size: 50
+  - file: "gfonts://Roboto+Mono"
+    id: RobotoMono50
+    size: 50
+  - file: "gfonts://Roboto"
+    id: Roboto15
+    size: 15
+
+text:
+  - platform: template
+    name: "Message"
+    id: message
+    optimistic: true
+    min_length: 0
+    max_length: 45
+    initial_value: '...'
+    mode: text
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: 'return id(system_initialized) == true;'
+            then:
+              - component.update: ed047tc1_display
