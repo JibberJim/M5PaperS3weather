@@ -41,8 +41,8 @@ interval:
           
 
 logger:
-  level: INFO
-  baud_rate: 1920
+  level: WARN
+  baud_rate: 0
   logs:
     api.service: WARN
     wifi: NONE
@@ -168,6 +168,22 @@ text_sensor:
   - platform: homeassistant
     id: sunrise
     entity_id: sensor.sun_next_rising
+    internal: true
+    on_value:
+      then:
+        - component.update: ed047tc1_display
+  - platform: homeassistant
+    id: media_title
+    entity_id: media_player.room
+    attribute: media_title
+    internal: true
+    on_value:
+      then:
+        - component.update: ed047tc1_display
+  - platform: homeassistant
+    id: media_artist
+    entity_id: media_player.room
+    attribute: media_artist
     internal: true
     on_value:
       then:
@@ -443,7 +459,6 @@ display:
     d5_pin: GPIO11
     d6_pin: GPIO8
     d7_pin: GPIO10
-    update_interval: never
     rotation: 0
     lambda: |-
        ESPTime sunsetESP{};
@@ -473,8 +488,6 @@ display:
            it.image(sun_x,sun_y+76,id(img_sunset));
            it.printf(sun_x+205, sun_y+70, id(RobotoMono50), TextAlign::TOP_RIGHT, "%s",sunsetESP.strftime("%H:%M").c_str() );
        }
-
-       ESP_LOGW("Jibber", "Weather %s",id(weather_state).state.c_str());
 
        int forecast_x=20;
        int forecast_y=10;
@@ -544,8 +557,6 @@ display:
            it.filled_circle(wind_dot_x,wind_dot_y,9);
        }
     
-       ESP_LOGW("Jibber", "Weather %s",id(moon).state.c_str());
-
        int moon_x=it.get_width()-224-225;
        int moon_y=30;
        if (strcmp(id(moon).state.c_str(),"full_moon")==0) {
@@ -607,10 +618,16 @@ display:
          it.printf(conservatory_x+207, conservatory_y+107, id(Roboto50), TextAlign::TOP_RIGHT, "%.1f%% ",id(conservatory_humidity).state);
        }
 
-
-
-
-       it.print(it.get_width() / 2, it.get_height() , id(Roboto70), TextAlign::BOTTOM_CENTER, id(message).state.c_str());
+       if (strlen(id(message).state.c_str())>0) {
+           it.print(it.get_width() / 2, it.get_height() , id(Roboto70), TextAlign::BOTTOM_CENTER, id(message).state.c_str());
+       } else {
+           if (id(media_title).has_state()) {
+             it.print(10, it.get_height()-60 , id(Roboto50), TextAlign::BOTTOM_LEFT, id(media_title).state.c_str());
+           }
+           if (id(media_title).has_state()) {
+             it.print(10, it.get_height(), id(Roboto50), TextAlign::BOTTOM_LEFT, id(media_artist).state.c_str());
+           }
+       }
 
 font:
   - file: "gfonts://Roboto"
@@ -639,7 +656,7 @@ text:
     optimistic: true
     min_length: 0
     max_length: 45
-    initial_value: '...'
+    initial_value: ''
     mode: text
     on_value:
       then:
